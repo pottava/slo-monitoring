@@ -5,7 +5,11 @@
 本ハンズオンでは、Google Cloud で SLO モニタリングを体験できます。
 
 - コンテナのビルド・デプロイ
+- SLO モニタリングの設定
+- エラーバジェットの設定
+- アラートの設定
 - 不具合バージョンのリリース
+- SLO の変化を観察
 - ロールバック
 - カナリアリリース
 
@@ -81,6 +85,13 @@ teachme ~/slo-monitoring/tutorial.md
 export user_id="$( git config user.email  | awk '{ split($0, a, "@"); print a[1] }' )"
 ```
 
+### **3. Cloud Run のデフォルト設定**
+
+```bash
+gcloud config set run/region asia-northeast1
+gcloud config set run/platform managed
+```
+
 途中まで進めていたチュートリアルのページまで `次へ` ボタンを押し、進めてください。
 
 ## **Google Cloud 環境設定**
@@ -88,9 +99,13 @@ export user_id="$( git config user.email  | awk '{ split($0, a, "@"); print a[1]
 Google Cloud では利用したい機能（API）ごとに、有効化を行う必要があります。  
 ここでは、以降のハンズオンで利用する機能を事前に有効化しておきます。
 
-```bash
-gcloud services enable compute.googleapis.com run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
-```
+<walkthrough-enable-apis apis=
+  "compute.googleapis.com,
+  run.googleapis.com,
+  monitoring.googleapis.com,
+  cloudbuild.googleapis.com,
+  artifactregistry.googleapis.com">
+</walkthrough-enable-apis>
 
 **GUI**: [API ライブラリ](https://console.cloud.google.com/apis/library)
 
@@ -104,9 +119,7 @@ gcloud services enable compute.googleapis.com run.googleapis.com cloudbuild.goog
 
 下記のように GUI を操作し Cloud Run の管理画面を開いておきましょう。
 
-<walkthrough-spotlight-pointer spotlightId="console-nav-menu">ナビゲーションメニュー</walkthrough-spotlight-pointer> -> サーバーレス -> Cloud Run
-
-また以降の手順で Cloud Run の管理画面は何度も開くことになるため、ピン留め (Cloud Run メニューにマウスオーバーし、ピンのアイコンをクリック) しておくと便利です。
+<walkthrough-menu-navigation sectionId="SERVERLESS_SECTION"></walkthrough-menu-navigation>
 
 ### **1. リポジトリを作成**
 
@@ -128,6 +141,42 @@ gcloud builds submit --pack "builder=gcr.io/buildpacks/builder,image=asia-northe
 gcloud run deploy svc-${user_id} --image "asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/apps-${user_id}/sample:v0.1" --allow-unauthenticated
 ```
 
+## **SLO モニタリングの設定**
+
+Cloud Monitoring の画面に移動し、
+
+<walkthrough-menu-navigation sectionId="MONITORING_SECTION"></walkthrough-menu-navigation>
+
+"サービス" を選択し、"サービスの概要" に移動します。
+
+### **SLO の定義**
+
+1. `+ サービスを定義` ボタンを押し
+2. 自分が作成した Cloud Run サービスの名前をクリックし、送信
+3. 左下の `SLO を作成` を押し
+4. 指標の選択は `可用性` と `リクエスト ベース` となっていることを確認して続行
+5. プレビューを眺めつつ、続行
+6. コンプライアンス期間は `連続` で `28 日` SLO は `99.9%` を目標にして続行
+7. 必要なら SLO の `表示名` を変更して `SLO を作成` しましょう
+
+### **エラーバジェットの確認**
+
+作成した SLO の状況を確認してみます。
+
+SLO 名をクリックすると詳細情報が展開します。エラー予算も自動で計算されているのがわかるかと思います。ここで Apache Bench を使って負荷をかけておきましょう。
+
+```sh
+sudo apt-get install -y apache2-utils
+ab -n 500 -c 10 -l "$( gcloud run services describe svc-${user_id} --format json | jq -r '.status.address.url' )/"
+```
+
+## **アラートの設定**
+
+1. アラートを設定したい SLO を開き `SLO アラートを作成` ボタンを押し
+2. ルックバック期間は  `60 分`、バーンレートの閾値は `2%` を設定して次へ進んでください
+3. 通知先がなければ `MANAGE NOTIFICATION CHANNELS` から通知先を設定します
+4. 改めて通知先をリロード・指定し `SAVE` アラート設定します
+
 ## **不具合バージョンのリリース**
 
 ### **1. 新リビジョンのデプロイ**
@@ -146,9 +195,17 @@ gcloud run deploy svc-${user_id} --image "asia-northeast1-docker.pkg.dev/${GOOGL
 curl -iXGET $(gcloud run services describe svc-${user_id} --format json | jq -r '.status.address.url')
 ```
 
+### **3. エラーバジェットの確認**
+
+この状態で負荷をかけ、
+
+```sh
+ab -n 1000 -c 10 -l "$( gcloud run services describe svc-${user_id} --format json | jq -r '.status.address.url' )/"
+```
+
 ## **ロールバック**
 
-### **1. 旧リビジョンのロールバック**
+### **1. 旧リビジョンへのロールバック**
 
 不具合のなかった前のリビジョンにもどします。
 
@@ -189,7 +246,9 @@ gcloud run services update-traffic svc-${user_id} --to-revisions "LATEST=20"
 
 ターミナルに出力された URL をクリックするとブラウザが開きます。そこでリロードを繰り返してみます。10 回に 1 回 `Forbidden` と表示されます。
 
-### **3.すべてのアクセスを新リビジョンに**
+## 最新リビジョンへの移行
+
+### **すべてのアクセスを新リビジョンに**
 
 状況的に正しい処置ではなく、エラーレートが悪化することになりますが、すべて最新のリビジョンに流してみます。
 
