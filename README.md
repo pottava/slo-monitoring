@@ -1,6 +1,15 @@
 SLO monitoring
 ---
 
+## SQL モニタリング チュートリアル
+
+Cloud Shell で以下のコマンドを実行してください。
+
+```sh
+git clone https://github.com/pottava/slo-monitoring.git ~/slo-monitoring
+teachme ~/slo-monitoring/tutorial.md
+```
+
 ## サンプル アプリケーションのローカル起動
 
 ```sh
