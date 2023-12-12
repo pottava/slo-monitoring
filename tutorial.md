@@ -189,7 +189,7 @@ gcloud run deploy svc-${user_id} --image "asia-northeast1-docker.pkg.dev/${GOOGL
 
 ### **2. アプリケーションにアクセス**
 
-デプロイ後、どのようなレスポンスが返ってくるかを確認します。 `Forbidden` と返ってくるはずです。
+デプロイ後、どのようなレスポンスが返ってくるかを確認します。 `Internal Server Error` と返ってくるはずです。
 
 ```bash
 curl -iXGET $(gcloud run services describe svc-${user_id} --format json | jq -r '.status.address.url')
@@ -244,7 +244,7 @@ gcloud run deploy svc-${user_id} --image "asia-northeast1-docker.pkg.dev/${GOOGL
 gcloud run services update-traffic svc-${user_id} --to-revisions "LATEST=20"
 ```
 
-ターミナルに出力された URL をクリックするとブラウザが開きます。そこでリロードを繰り返してみます。10 回に 1 回 `Forbidden` と表示されます。
+ターミナルに出力された URL をクリックするとブラウザが開きます。そこでリロードを繰り返してみます。10 回に 1 回 `Internal Server Error` と表示されます。
 
 ## 最新リビジョンへの移行
 
@@ -256,7 +256,7 @@ gcloud run services update-traffic svc-${user_id} --to-revisions "LATEST=20"
 gcloud run services update-traffic svc-${user_id} --to-latest
 ```
 
-2 回に 1 回 `Forbidden` と表示されます。
+2 回に 1 回 `Internal Server Error` と表示されます。
 
 ## **Congraturations!**
 

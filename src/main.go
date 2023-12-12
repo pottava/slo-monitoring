@@ -12,8 +12,8 @@ import (
 func handler(w http.ResponseWriter, r *http.Request) {
 	if candidate, found := os.LookupEnv("ERROR_RATE"); found {
 		if rate, err := strconv.ParseFloat(candidate, 64); err == nil && rate >= rand.Float64() {
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte(http.StatusText(http.StatusForbidden)))
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "%s\n", http.StatusText(http.StatusInternalServerError))
 			return
 		}
 	}
