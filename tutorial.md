@@ -132,13 +132,13 @@ gcloud artifacts repositories create "apps-${user_id}" --repository-format "dock
 Cloud Build を使い、一連の操作を一気に行います。 `--pack` オプションを指定することで [Buildpacks](https://github.com/GoogleCloudPlatform/buildpacks) が内部的に利用され、Dockerfile なしにコンテナをビルドできます。
 
 ```bash
-gcloud builds submit --pack "builder=gcr.io/buildpacks/builder,image=asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/apps-${user_id}/sample:v0.1" src
+gcloud builds submit --pack "builder=gcr.io/buildpacks/builder,image=asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/apps-${user_id}/sample:v1.0" src
 ```
 
 ### **3. Cloud Run にデプロイ**
 
 ```bash
-gcloud run deploy svc-${user_id} --image "asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/apps-${user_id}/sample:v0.1" --allow-unauthenticated
+gcloud run deploy svc-${user_id} --image "asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/apps-${user_id}/sample:v1.0" --allow-unauthenticated
 ```
 
 ## **SLO モニタリングの設定**
@@ -184,7 +184,7 @@ ab -n 500 -c 10 -l "$( gcloud run services describe svc-${user_id} --format json
 100% の確率でレスポンスコード 403 を返す環境変数を設定し、新しいリビジョンをデプロイします。
 
 ```bash
-gcloud run deploy svc-${user_id} --image "asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/apps-${user_id}/sample:v0.1" --set-env-vars "ERROR_RATE=1.0"
+gcloud run deploy svc-${user_id} --image "asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/apps-${user_id}/sample:v1.0" --set-env-vars "ERROR_RATE=1.0,SLEEP_RATE=0.1"
 ```
 
 ### **2. アプリケーションにアクセス**
@@ -231,7 +231,7 @@ curl -iXGET $(gcloud run services describe svc-${user_id} --format json | jq -r 
 半分の確率でレスポンスコード 403 を返す環境変数を添えて、新しいリビジョンをデプロイします。
 
 ```bash
-gcloud run deploy svc-${user_id} --image "asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/apps-${user_id}/sample:v0.1" --set-env-vars "ERROR_RATE=0.5" --no-traffic
+gcloud run deploy svc-${user_id} --image "asia-northeast1-docker.pkg.dev/${GOOGLE_CLOUD_PROJECT}/apps-${user_id}/sample:v1.0" --set-env-vars "ERROR_RATE=0.5,SLEEP_RATE=0.0" --no-traffic
 ```
 
 **ヒント**: 新リビジョンにトラフィックを流さないよう、`--no-traffic` のオプションをつけています。これがない場合、デプロイされた瞬間にすべてのトラフィックが新リビジョンに流れます。

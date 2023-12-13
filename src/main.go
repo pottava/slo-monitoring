@@ -7,9 +7,21 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	if candidate, found := os.LookupEnv("SLEEP_RATE"); found {
+		if rate, err := strconv.ParseFloat(candidate, 64); err == nil && rate >= rand.Float64() {
+			sleep := 200
+			if candidate, found := os.LookupEnv("SLEEP_MSEC"); found {
+				if msec, err := strconv.Atoi(candidate); err == nil {
+					sleep = msec
+				}
+			}
+			time.Sleep(time.Duration(sleep) * time.Millisecond)
+		}
+	}
 	if candidate, found := os.LookupEnv("ERROR_RATE"); found {
 		if rate, err := strconv.ParseFloat(candidate, 64); err == nil && rate >= rand.Float64() {
 			w.WriteHeader(http.StatusInternalServerError)
